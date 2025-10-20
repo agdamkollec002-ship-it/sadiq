@@ -1,39 +1,37 @@
-﻿require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Frontend qovluğunun yolunu təyin et
-const frontendPath = path.join(__dirname, '../frontend');
+// Middleware - CORS
+app.use(cors({
+    origin: function (origin, callback) {
+        callback(null, true);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 
-// Middleware
-app.use(cors());
 app.use(express.json());
-app.use(express.static(frontendPath));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static('uploads', {
+    setHeaders: (res, path) => {
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
-// Bütün request-ləri log-la (yalnız development-da)
-if (process.env.NODE_ENV !== 'production') {
-    app.use((req, res, next) => {
-        console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-        next();
-    });
-}
-
-// Upload qovluğunu yoxla/yarat
+// Uploads qovluğunu yoxla/yarat
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
     console.log('Uploads qovluğu yaradıldı');
 }
 
-// Fayl yaddaşı konfiqurasiyası
+// Fayl saxlama konfiqurasiyası
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -52,276 +50,335 @@ const upload = multer({
         if (allowedTypes.includes(fileExt)) {
             cb(null, true);
         } else {
-            cb(new Error('Yalnız PDF və Word faylları yükləyə bilərsiniz!'));
+            cb(new Error('Yalnız PDF və Word faylları icazə verilir!'));
         }
     },
     limits: {
-        fileSize: 10 * 1024 * 1024
+        fileSize: 10 * 1024 * 1024 // 10MB limit
     }
 });
 
-// Məlumatların saxlanması (real tətbiqdə verilənlər bazası istifadə edin)
-let data = {
-    files: {
-        transport: { lecture: [], colloquium: [], seminar: [] },
-        computer: { lecture: [], colloquium: [], seminar: [] },
-        math: { lecture: [], colloquium: [], seminar: [] },
-        economics: { lecture: [], colloquium: [], seminar: [] },
-        azerbaijani: { lecture: [], colloquium: [], seminar: [] },
-        english: { lecture: [], colloquium: [], seminar: [] },
-        physical: { lecture: [], colloquium: [], seminar: [] },
-        pedagogy: { lecture: [], colloquium: [], seminar: [] },
-        agriculture: { lecture: [], colloquium: [], seminar: [] },
-        history: { lecture: [], colloquium: [], seminar: [] }
-    },
-    teachers: {
-        'Nəqliyyat': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'transport' },
-        'Kompyuter sistemləri': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'computer' },
-        'Riyaziyyat': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'math' },
-        'İqtisadiyyat': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'economics' },
-        'Azərbaycan dili': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'azerbaijani' },
-        'İngilis dili': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'english' },
-        'Fiziki tərbiyə': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'physical' },
-        'Pedaqogika': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'pedagogy' },
-        'Kənd təsərrüfatı': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'agriculture' },
-        'Tarix': { password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', subject: 'history' }
-    },
-    modules: {
-        'transport': { username: 'neqliyyat', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'computer': { username: 'kompyuter', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'math': { username: 'riyaziyyat', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'economics': { username: 'iqtisadiyyat', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'azerbaijani': { username: 'azdili', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'english': { username: 'ingilisdili', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'physical': { username: 'fiziki', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'pedagogy': { username: 'pedagogiya', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'agriculture': { username: 'kend', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' },
-        'history': { username: 'tarix', password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi' }
+// Məlumatlar üçün JSON faylı
+const DATA_FILE = 'data.json';
+const TEACHERS_FILE = 'teachers.json';
+const MODULES_FILE = 'modules.json';
+
+// JSON fayllarını oxumaq üçün funksiya
+function readJSONFile(filename, defaultData = {}) {
+    try {
+        if (fs.existsSync(filename)) {
+            return JSON.parse(fs.readFileSync(filename, 'utf8'));
+        }
+        writeJSONFile(filename, defaultData);
+        return defaultData;
+    } catch (error) {
+        console.error(`Error reading ${filename}:`, error);
+        return defaultData;
     }
+}
+
+// JSON fayllarına yazmaq üçün funksiya
+function writeJSONFile(filename, data) {
+    try {
+        fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+        return true;
+    } catch (error) {
+        console.error(`Error writing ${filename}:`, error);
+        return false;
+    }
+}
+
+// Fayl URL-ni yaratmaq üçün funksiya - ƏSAS DƏYİŞİKLİK
+function getFileUrl(filename) {
+    const baseUrl = process.env.NODE_ENV === 'production' 
+        ? 'https://sadiq-ubml.onrender.com'
+        : 'http://localhost:3000';
+    return `${baseUrl}/uploads/${filename}`;
+}
+
+// Standart məlumatları inisializasiya et
+const defaultFileData = {
+    transport: { lecture: [], colloquium: [], seminar: [] },
+    computer: { lecture: [], colloquium: [], seminar: [] },
+    math: { lecture: [], colloquium: [], seminar: [] },
+    economics: { lecture: [], colloquium: [], seminar: [] },
+    azerbaijani: { lecture: [], colloquium: [], seminar: [] },
+    english: { lecture: [], colloquium: [], seminar: [] },
+    physical: { lecture: [], colloquium: [], seminar: [] },
+    pedagogy: { lecture: [], colloquium: [], seminar: [] },
+    agriculture: { lecture: [], colloquium: [], seminar: [] },
+    history: { lecture: [], colloquium: [], seminar: [] }
 };
 
-// Bütün şifrələri bcrypt ilə hash et
-async function hashPasswords() {
-    const hashedPassword = await bcrypt.hash('pass1234', 10);
-    Object.keys(data.teachers).forEach(teacher => {
-        data.teachers[teacher].password = hashedPassword;
-    });
-    Object.keys(data.modules).forEach(module => {
-        data.modules[module].password = hashedPassword;
-    });
-}
+const defaultTeacherCredentials = {
+    'Nəqliyyat': { password: 'pass1234', subject: 'transport' },
+    'Kompyuter sistemləri': { password: 'pass1234', subject: 'computer' },
+    'Riyaziyyat': { password: 'pass1234', subject: 'math' },
+    'İqtisadiyyat': { password: 'pass1234', subject: 'economics' },
+    'Azərbaycan dili': { password: 'pass1234', subject: 'azerbaijani' },
+    'İngilis dili': { password: 'pass1234', subject: 'english' },
+    'Fiziki tərbiyə': { password: 'pass1234', subject: 'physical' },
+    'Pedaqogika': { password: 'pass1234', subject: 'pedagogy' },
+    'Kənd təsərrüfatı': { password: 'pass1234', subject: 'agriculture' },
+    'Tarix': { password: 'pass1234', subject: 'history' }
+};
+
+const defaultModuleCredentials = {
+    'transport': { username: 'neqliyyat', password: 'pass1234' },
+    'computer': { username: 'kompyuter', password: 'pass1234' },
+    'math': { username: 'riyaziyyat', password: 'pass1234' },
+    'economics': { username: 'iqtisadiyyat', password: 'pass1234' },
+    'azerbaijani': { username: 'azdili', password: 'pass1234' },
+    'english': { username: 'ingilisdili', password: 'pass1234' },
+    'physical': { username: 'fiziki', password: 'pass1234' },
+    'pedagogy': { username: 'pedagogiya', password: 'pass1234' },
+    'agriculture': { username: 'kend', password: 'pass1234' },
+    'history': { username: 'tarix', password: 'pass1234' }
+};
+
+// Məlumatları yüklə
+let fileData = readJSONFile(DATA_FILE, defaultFileData);
+let teacherCredentials = readJSONFile(TEACHERS_FILE, defaultTeacherCredentials);
+let moduleCredentials = readJSONFile(MODULES_FILE, defaultModuleCredentials);
 
 // API Routes
 
-// Server status
+// Server status endpoint
 app.get('/api/status', (req, res) => {
     res.json({ 
-        status: 'Server işləyir', 
+        status: 'Server is running', 
+        timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
-        timestamp: new Date().toISOString() 
+        baseUrl: process.env.NODE_ENV === 'production' ? 'https://sadiq-ubml.onrender.com' : 'http://localhost:3000'
     });
 });
 
-// Ana səhifə - index.html faylını göndər
-app.get('/', (req, res) => {
-    const indexPath = path.join(frontendPath, 'index.html');
-    if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-    } else {
-        res.status(404).send('Ana səhifə tapılmadı');
-    }
-});
-
-// Bütün məlumatları gətir
+// Bütün məlumatları qaytaran endpoint
 app.get('/api/data', (req, res) => {
-    res.json(data.files);
+    res.json(fileData);
 });
 
-// Müəllim məlumatlarını gətir
+// Müəllim məlumatlarını qaytaran endpoint
 app.get('/api/teachers', (req, res) => {
-    res.json(data.teachers);
+    res.json(teacherCredentials);
 });
 
-// Modul məlumatlarını gətir
+// Modul məlumatlarını qaytaran endpoint
 app.get('/api/modules', (req, res) => {
-    res.json(data.modules);
+    res.json(moduleCredentials);
 });
 
-// Müəyyən fənn və modulun fayllarını gətir
+// Müəyyən fənn və modul üçün faylları qaytaran endpoint
 app.get('/api/files/:subject/:module', (req, res) => {
     const { subject, module } = req.params;
     
-    if (data.files[subject] && data.files[subject][module]) {
-        res.json(data.files[subject][module]);
+    if (fileData[subject] && fileData[subject][module]) {
+        res.json(fileData[subject][module]);
     } else {
         res.status(404).json({ error: 'Fayllar tapılmadı' });
     }
 });
 
-// Müəllimin bütün fayllarını gətir
+// Müəllim üçün bütün faylları qaytaran endpoint
 app.get('/api/teacher-files/:subject', (req, res) => {
     const { subject } = req.params;
     
-    if (data.files[subject]) {
-        res.json(data.files[subject]);
+    if (fileData[subject]) {
+        res.json(fileData[subject]);
     } else {
-        res.status(404).json({ error: 'Fayllar tapılmadı' });
+        res.status(404).json({ error: 'Fənn tapılmadı' });
     }
 });
 
-// Modul girişi
-app.post('/api/module-login', async (req, res) => {
+// Modul giriş endpoint
+app.post('/api/module-login', (req, res) => {
     const { subject, username, password } = req.body;
     
-    if (!data.modules[subject]) {
-        return res.json({ success: false, message: 'Modul tapılmadı' });
-    }
-    
-    const module = data.modules[subject];
-    const validUsername = username === module.username;
-    const validPassword = await bcrypt.compare(password, module.password);
-    
-    if (validUsername && validPassword) {
-        res.json({ success: true });
+    if (moduleCredentials[subject] && 
+        moduleCredentials[subject].username === username && 
+        moduleCredentials[subject].password === password) {
+        res.json({ success: true, message: 'Giriş uğurlu' });
     } else {
         res.json({ success: false, message: 'İstifadəçi adı və ya şifrə yanlışdır' });
     }
 });
 
-// Müəllim girişi
-app.post('/api/teacher-login', async (req, res) => {
+// Müəllim giriş endpoint
+app.post('/api/teacher-login', (req, res) => {
     const { username, password } = req.body;
     
-    if (!data.teachers[username]) {
-        return res.json({ success: false, message: 'Müəllim tapılmadı' });
-    }
-    
-    const teacher = data.teachers[username];
-    const validPassword = await bcrypt.compare(password, teacher.password);
-    
-    if (validPassword) {
-        res.json({ success: true, subject: teacher.subject, teacher: username });
+    if (teacherCredentials[username] && teacherCredentials[username].password === password) {
+        res.json({ 
+            success: true, 
+            message: 'Giriş uğurlu',
+            subject: teacherCredentials[username].subject 
+        });
     } else {
         res.json({ success: false, message: 'İstifadəçi adı və ya şifrə yanlışdır' });
     }
 });
 
-// Fayl yüklə
+// Fayl yükləmə endpoint - ƏSAS DƏYİŞİKLİK
 app.post('/api/upload', upload.single('file'), (req, res) => {
     try {
-        console.log('Fayl yükləmə sorğusu alındı');
-        console.log('Request body:', req.body);
-        console.log('Request file:', req.file);
-        
         if (!req.file) {
-            console.log('Fayl yüklənmədi');
             return res.status(400).json({ error: 'Fayl yüklənmədi' });
         }
-        
+
         const { subject, module, type } = req.body;
-        console.log('Fənn:', subject, 'Modul:', module, 'Tip:', type);
         
-        if (!data.files[subject] || !data.files[subject][module]) {
-            console.log('Yanlış fənn və ya modul:', subject, module);
-            return res.status(400).json({ error: 'Yanlış fənn və ya modul' });
+        if (!subject || !module) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({ error: 'Fənn və modul tələb olunur' });
         }
-        
-        const fileData = {
-            id: uuidv4(),
+
+        // Fayl məlumatını yadda saxla - URL DÜZGÜN YARADILIR
+        const fileInfo = {
+            id: Date.now(),
             filename: req.file.filename,
             originalname: req.file.originalname,
+            url: getFileUrl(req.file.filename), // TAM URL İSTİFADƏ EDİLİR
             path: req.file.path,
             size: req.file.size,
-            type: type,
+            type: type || (req.file.originalname.toLowerCase().endsWith('.pdf') ? 'pdf' : 'word'),
             uploadedAt: new Date().toISOString()
         };
-        
-        data.files[subject][module].push(fileData);
-        console.log('Fayl uğurla əlavə edildi:', fileData);
-        
+
+        // Data strukturunu inisializasiya et
+        if (!fileData[subject]) {
+            fileData[subject] = { lecture: [], colloquium: [], seminar: [] };
+        }
+        if (!fileData[subject][module]) {
+            fileData[subject][module] = [];
+        }
+
+        // Faylı əlavə et
+        fileData[subject][module].push(fileInfo);
+
+        // JSON faylını yenilə
+        writeJSONFile(DATA_FILE, fileData);
+
         res.json({ 
             success: true, 
             message: 'Fayl uğurla yükləndi',
-            file: fileData
+            filename: req.file.filename,
+            file: fileInfo
         });
-        
+
     } catch (error) {
-        console.error('Fayl yükləmə xətası:', error);
-        res.status(500).json({ error: 'Fayl yükləmə xətası: ' + error.message });
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'Fayl yüklənmədi' });
     }
 });
 
-// Şifrə yenilə
-app.post('/api/update-password', async (req, res) => {
+// Şifrə yeniləmə endpoint
+app.post('/api/update-password', (req, res) => {
     const { teacher, currentPassword, newPassword } = req.body;
     
-    if (!data.teachers[teacher]) {
-        return res.json({ success: false, message: 'Müəllim tapılmadı' });
+    if (teacherCredentials[teacher] && teacherCredentials[teacher].password === currentPassword) {
+        teacherCredentials[teacher].password = newPassword;
+        
+        if (writeJSONFile(TEACHERS_FILE, teacherCredentials)) {
+            res.json({ success: true, message: 'Şifrə uğurla yeniləndi' });
+        } else {
+            res.json({ success: false, message: 'Şifrə yenilənmədi' });
+        }
+    } else {
+        res.json({ success: false, message: 'Hazırki şifrə yanlışdır' });
     }
-    
-    const teacherData = data.teachers[teacher];
-    const validCurrentPassword = await bcrypt.compare(currentPassword, teacherData.password);
-    
-    if (!validCurrentPassword) {
-        return res.json({ success: false, message: 'Hazırki şifrə yanlışdır' });
-    }
-    
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-    teacherData.password = hashedNewPassword;
-    
-    res.json({ success: true, message: 'Şifrə uğurla yeniləndi' });
 });
 
-// Fayl adını yenilə
+// Fayl adını yeniləmə endpoint
 app.post('/api/update-filename', (req, res) => {
     const { fileId, module, subject, newName } = req.body;
     
-    if (!data.files[subject] || !data.files[subject][module]) {
-        return res.json({ success: false, message: 'Fayl tapılmadı' });
+    if (fileData[subject] && fileData[subject][module]) {
+        const fileIndex = fileData[subject][module].findIndex(f => f.id == fileId);
+        
+        if (fileIndex !== -1) {
+            fileData[subject][module][fileIndex].originalname = newName;
+            
+            if (writeJSONFile(DATA_FILE, fileData)) {
+                res.json({ success: true, message: 'Fayl adı uğurla yeniləndi' });
+            } else {
+                res.json({ success: false, message: 'Fayl adı yenilənmədi' });
+            }
+        } else {
+            res.json({ success: false, message: 'Fayl tapılmadı' });
+        }
+    } else {
+        res.json({ success: false, message: 'Fənn və ya modul tapılmadı' });
     }
-    
-    const fileIndex = data.files[subject][module].findIndex(file => file.id === fileId);
-    
-    if (fileIndex === -1) {
-        return res.json({ success: false, message: 'Fayl tapılmadı' });
-    }
-    
-    data.files[subject][module][fileIndex].originalname = newName;
-    
-    res.json({ success: true, message: 'Fayl adı uğurla yeniləndi' });
 });
 
-// Faylı sil
+// Fayl silmə endpoint
 app.post('/api/delete-file', (req, res) => {
     const { fileId, module, subject } = req.body;
     
-    if (!data.files[subject] || !data.files[subject][module]) {
-        return res.json({ success: false, message: 'Fayl tapılmadı' });
+    if (fileData[subject] && fileData[subject][module]) {
+        const fileIndex = fileData[subject][module].findIndex(f => f.id == fileId);
+        
+        if (fileIndex !== -1) {
+            const file = fileData[subject][module][fileIndex];
+            
+            // Fiziki faylı sil
+            try {
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
+            } catch (error) {
+                console.error('Fayl silinmə xətası:', error);
+            }
+            
+            // Data strukturundan sil
+            fileData[subject][module].splice(fileIndex, 1);
+            
+            if (writeJSONFile(DATA_FILE, fileData)) {
+                res.json({ success: true, message: 'Fayl uğurla silindi' });
+            } else {
+                res.json({ success: false, message: 'Fayl silinmədi' });
+            }
+        } else {
+            res.json({ success: false, message: 'Fayl tapılmadı' });
+        }
+    } else {
+        res.json({ success: false, message: 'Fənn və ya modul tapılmadı' });
     }
-    
-    const fileIndex = data.files[subject][module].findIndex(file => file.id === fileId);
-    
-    if (fileIndex === -1) {
-        return res.json({ success: false, message: 'Fayl tapılmadı' });
+});
+
+// Frontend üçün static fayllar
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Əsas səhifə route-u
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Xəta idarəetmə middleware
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'Fayl həcmi çox böyükdür (maksimum 10MB)' });
+        }
     }
-    
-    const file = data.files[subject][module][fileIndex];
-    
-    try {
-        fs.unlinkSync(file.path);
-    } catch (error) {
-        console.log('Fiziki fayl silinmədi:', error.message);
-    }
-    
-    data.files[subject][module].splice(fileIndex, 1);
-    
-    res.json({ success: true, message: 'Fayl uğurla silindi' });
+    res.status(500).json({ error: error.message });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Endpoint tapılmadı' });
 });
 
 // Serveri başlat
-app.listen(PORT, async () => {
-    await hashPasswords();
+app.listen(PORT, () => {
     console.log(`Server http://localhost:${PORT} ünvanında işləyir`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Frontend qovluğu: ${frontendPath}`);
+    console.log('Environment:', process.env.NODE_ENV || 'development');
+    console.log('Frontend qovluğu:', path.join(__dirname, 'public'));
+    console.log('API Endpoints:');
+    console.log('  GET  /api/status - Server status');
+    console.log('  GET  /api/data - Bütün fayl məlumatları');
+    console.log('  GET  /api/files/:subject/:module - Müəyyən fənn/modul faylları');
+    console.log('  POST /api/upload - Fayl yüklə');
+    console.log('  POST /api/teacher-login - Müəllim girişi');
+    console.log('  POST /api/module-login - Modul girişi');
 });
