@@ -799,766 +799,888 @@
         </div>
     </div>
 <script>
-  const API_BASE = 'https://sadiq-tm42.onrender.com';
-  
-  // Məlumatları yadda saxlayan dəyişənlər
-  let fileData = {};
-  let teacherCredentials = {};
-  let moduleCredentials = {};
+   const API_BASE = 'https://your-college-app.onrender.com';
+    // Məlumatları yadda saxlayan dəyişənlər
+    let fileData = {};
+    let teacherCredentials = {};
+    let moduleCredentials = {};
 
-  // Cari vəziyyət dəyişənləri
-  let currentSubject = null;
-  let currentModule = null;
-  let currentTeacherSubject = null;
-  let selectedModule = 'lecture';
+    // Cari vəziyyət dəyişənləri
+    let currentSubject = null;
+    let currentModule = null;
+    let currentTeacherSubject = null;
+    let selectedModule = 'lecture';
 
-  // DOM Elementlərinə istinadlar
-  const subjectItems = document.querySelectorAll('.subject-item');
-  const moduleItems = document.querySelectorAll('.module-item');
-  const fileList = document.getElementById('fileList');
-  const moduleLoginModal = document.getElementById('moduleLoginModal');
-  const profileLoginModal = document.getElementById('profileLoginModal');
-  const cabinetModal = document.getElementById('cabinetModal');
-  const closeModuleLoginModal = document.getElementById('closeModuleLoginModal');
-  const closeProfileLoginModal = document.getElementById('closeProfileLoginModal');
-  const closeCabinetModal = document.getElementById('closeCabinetModal');
-  const moduleLoginForm = document.getElementById('moduleLoginForm');
-  const profileLoginForm = document.getElementById('profileLoginForm');
-  const backBtn = document.getElementById('backBtn');
-  const profileBtn = document.getElementById('profileBtn');
-  const pdfUpload = document.getElementById('pdfUpload');
-  const wordUpload = document.getElementById('wordUpload');
-  const updatePasswordForm = document.getElementById('updatePasswordForm');
-  const fileEditList = document.getElementById('fileEditList');
-  const contentTitle = document.getElementById('contentTitle');
-  const cabinetTitle = document.getElementById('cabinetTitle');
-  const moduleLoginTitle = document.getElementById('moduleLoginTitle');
-  const moduleBtns = document.querySelectorAll('.module-btn');
+    // DOM Elementlərinə istinadlar
+    const subjectItems = document.querySelectorAll('.subject-item');
+    const moduleItems = document.querySelectorAll('.module-item');
+    const fileList = document.getElementById('fileList');
+    const moduleLoginModal = document.getElementById('moduleLoginModal');
+    const profileLoginModal = document.getElementById('profileLoginModal');
+    const cabinetModal = document.getElementById('cabinetModal');
+    const closeModuleLoginModal = document.getElementById('closeModuleLoginModal');
+    const closeProfileLoginModal = document.getElementById('closeProfileLoginModal');
+    const closeCabinetModal = document.getElementById('closeCabinetModal');
+    const moduleLoginForm = document.getElementById('moduleLoginForm');
+    const profileLoginForm = document.getElementById('profileLoginForm');
+    const backBtn = document.getElementById('backBtn');
+    const profileBtn = document.getElementById('profileBtn');
+    const pdfUpload = document.getElementById('pdfUpload');
+    const wordUpload = document.getElementById('wordUpload');
+    const updatePasswordForm = document.getElementById('updatePasswordForm');
+    const fileEditList = document.getElementById('fileEditList');
+    const contentTitle = document.getElementById('contentTitle');
+    const cabinetTitle = document.getElementById('cabinetTitle');
+    const moduleLoginTitle = document.getElementById('moduleLoginTitle');
+    const moduleBtns = document.querySelectorAll('.module-btn');
 
-  // Local storage-u təmizlə - HƏR ŞEY SERVERDƏN GƏLƏCƏK
-  function clearLocalStorage() {
-    localStorage.removeItem('collegeFileData');
-    localStorage.removeItem('teacherCredentials');
-    localStorage.removeItem('moduleCredentials');
-    console.log('Local storage təmizləndi - hər şey serverdən gələcək');
-  }
-
-  // Serverdən məlumatları yükləyən funksiya - YENİ VERSİYA
-  async function loadDataFromServer() {
-    try {
-      console.log('Serverdən məlumatlar yüklənir...');
-      const response = await fetch(`${API_BASE}/api/data?t=${Date.now()}`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Serverdən məlumatlar alındı:', data);
-        return data;
-      } else {
-        throw new Error(`Server xətası: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Serverə qoşulma xətası:', error);
-      return {};
-    }
-  }
-
-  // Serverdən müəllim məlumatlarını yükləyən funksiya - YENİ VERSİYA
-  async function loadTeacherCredentialsFromServer() {
-    try {
-      const response = await fetch(`${API_BASE}/api/teachers?t=${Date.now()}`);
-      if (response.ok) {
-        return await response.json();
-      } else {
-        throw new Error(`Server xətası: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Serverə qoşulma xətası:', error);
-      return {};
-    }
-  }
-
-  // Serverdən modul məlumatlarını yükləyən funksiya - YENİ VERSİYA
-  async function loadModuleCredentialsFromServer() {
-    try {
-      const response = await fetch(`${API_BASE}/api/modules?t=${Date.now()}`);
-      if (response.ok) {
-        return await response.json();
-      } else {
-        throw new Error(`Server xətası: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Serverə qoşulma xətası:', error);
-      return {};
-    }
-  }
-
-  // Səhifə yükləndikdə məlumatları serverdən yüklə - YENİ VERSİYA
-  window.addEventListener('DOMContentLoaded', async () => {
-    console.log('Səhifə yükləndi, serverdən məlumatlar yüklənir...');
-    
-    // Local storage-u təmizlə
-    clearLocalStorage();
-    
-    try {
-      // Bütün məlumatları paralel yüklə
-      const [files, teachers, modules] = await Promise.all([
-        loadDataFromServer(),
-        loadTeacherCredentialsFromServer(),
-        loadModuleCredentialsFromServer()
-      ]);
-      
-      fileData = files;
-      teacherCredentials = teachers;
-      moduleCredentials = modules;
-      
-      console.log('Bütün məlumatlar serverdən uğurla yükləndi');
-      
-      // Server status yoxla
-      const statusResponse = await fetch(`${API_BASE}/api/status`);
-      if (statusResponse.ok) {
-        const status = await statusResponse.json();
-        console.log('Server status:', status);
-      }
-    } catch (error) {
-      console.error('Məlumatlar yüklənərkən xəta:', error);
-    }
-
-    // İlk modul düyməsini aktiv et
-    if (moduleBtns.length > 0) {
-      moduleBtns[0].classList.add('active');
-    }
-    
-    // Yadda saxlanılmış modul giriş məlumatlarını yoxla
-    subjectItems.forEach(item => {
-      const subject = item.getAttribute('data-subject');
-      const savedUsername = localStorage.getItem(`${subject}_module_username`);
-      const savedPassword = localStorage.getItem(`${subject}_module_password`);
-      
-      if (savedUsername && savedPassword) {
-        const modules = item.querySelectorAll('.module-item.locked');
-        modules.forEach(module => {
-          module.classList.remove('locked');
-          module.innerHTML = module.textContent;
-        });
-      }
-    });
-
-    // Yenilə düyməsini əlavə et
-    addRefreshButton();
-  });
-
-  // Fənn açılıb-bağlanmasını idarə edir
-  subjectItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      subjectItems.forEach(otherItem => {
-        if (otherItem !== item && otherItem.classList.contains('active')) {
-          otherItem.classList.remove('active');
+    // Serverdən məlumatları yükləyən funksiya
+    async function loadDataFromServer() {
+        try {
+            const response = await fetch(`${API_BASE}/api/data`);
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (error) {
+            console.error('Serverə qoşulma xətası:', error);
         }
-      });
-      
-      item.classList.toggle('active');
-      
-      if (item.classList.contains('active')) {
-        currentSubject = item.getAttribute('data-subject');
-      } else {
-        currentSubject = null;
-      }
-    });
-  });
-
-  // Modul klik hadisəsi idarəedicisi
-  moduleItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.stopPropagation();
-      
-      const moduleType = item.getAttribute('data-module');
-      currentModule = moduleType;
-      
-      if (item.classList.contains('locked')) {
-        moduleLoginTitle.textContent = `${getSubjectName(currentSubject)} - ${getModuleName(moduleType)}`;
-        moduleLoginModal.style.display = 'flex';
-      } else {
-        loadModuleContent(currentSubject, moduleType);
-      }
-    });
-  });
-
-  // Fənn adını almaq üçün funksiya
-  function getSubjectName(subject) {
-    const names = {
-      'transport': 'Nəqliyyat',
-      'computer': 'Kompyuter sistemləri',
-      'math': 'Riyaziyyat',
-      'economics': 'İqtisadiyyat',
-      'azerbaijani': 'Azərbaycan dili',
-      'english': 'İngilis dili',
-      'physical': 'Fiziki tərbiyə',
-      'pedagogy': 'Pedaqogika',
-      'agriculture': 'Kənd təsərrüfatı',
-      'history': 'Tarix'
-    };
-    return names[subject] || subject;
-  }
-
-  // Modul adını almaq üçün funksiya
-  function getModuleName(module) {
-    const names = {
-      'lecture': 'Mühazirə',
-      'colloquium': 'Kollekvium',
-      'seminar': 'Seminar'
-    };
-    return names[module] || module;
-  }
-
-  // Modul məzmununu yükləyən funksiya - YENİ VERSİYA (YALNIZ SERVER)
-  async function loadModuleContent(subject, module) {
-    console.log(`Fayllar yüklənir: ${subject} - ${module}`);
-    
-    const subjectName = getSubjectName(subject);
-    let titleText = '';
-    
-    switch(module) {
-      case 'lecture':
-        titleText = `${subjectName} - Mühazirə Materialları`;
-        break;
-      case 'colloquium':
-        titleText = `${subjectName} - Kollekvium Materialları`;
-        break;
-      case 'seminar':
-        titleText = `${subjectName} - Seminar Materialları`;
-        break;
-    }
-    
-    contentTitle.textContent = titleText;
-    backBtn.style.display = 'block';
-    fileList.innerHTML = '<li class="file-item glass">Yüklənir...</li>';
-    
-    try {
-      // HƏMİŞƏ SERVERDƏN YÜKLƏ
-      const response = await fetch(`${API_BASE}/api/files/${subject}/${module}?t=${Date.now()}`);
-      
-      if (response.ok) {
-        const files = await response.json();
-        console.log(`Serverdən ${files.length} fayl alındı`);
         
+        // Server əlçatmaz olduqda localStorage istifadə et
+        return initializeLocalData();
+    }
+
+    // Serverdən müəllim məlumatlarını yükləyən funksiya
+    async function loadTeacherCredentialsFromServer() {
+        try {
+            const response = await fetch(`${API_BASE}/api/teachers`);
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (error) {
+            console.error('Serverə qoşulma xətası:', error);
+        }
+        
+        return initializeLocalTeacherCredentials();
+    }
+
+    // Serverdən modul məlumatlarını yükləyən funksiya
+    async function loadModuleCredentialsFromServer() {
+        try {
+            const response = await fetch(`${API_BASE}/api/modules`);
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (error) {
+            console.error('Serverə qoşulma xətası:', error);
+        }
+        
+        return initializeLocalModuleCredentials();
+    }
+
+    // LocalStorage-dan məlumatları yükləyən və ya standart quruluş yaradan funksiya
+    function initializeLocalData() {
+        const storedData = localStorage.getItem('collegeFileData');
+        if (storedData) {
+            return JSON.parse(storedData);
+        } else {
+            const defaultData = {
+                transport: { lecture: [], colloquium: [], seminar: [] },
+                computer: { lecture: [], colloquium: [], seminar: [] },
+                math: { lecture: [], colloquium: [], seminar: [] },
+                economics: { lecture: [], colloquium: [], seminar: [] },
+                azerbaijani: { lecture: [], colloquium: [], seminar: [] },
+                english: { lecture: [], colloquium: [], seminar: [] },
+                physical: { lecture: [], colloquium: [], seminar: [] },
+                pedagogy: { lecture: [], colloquium: [], seminar: [] },
+                agriculture: { lecture: [], colloquium: [], seminar: [] },
+                history: { lecture: [], colloquium: [], seminar: [] }
+            };
+            localStorage.setItem('collegeFileData', JSON.stringify(defaultData));
+            return defaultData;
+        }
+    }
+
+    // Müəllim giriş məlumatlarını yükləyən və ya standart dəyərlər yaradan funksiya
+    function initializeLocalTeacherCredentials() {
+        const storedCredentials = localStorage.getItem('teacherCredentials');
+        if (storedCredentials) {
+            return JSON.parse(storedCredentials);
+        } else {
+            const defaultCredentials = {
+                'Nəqliyyat': { password: 'pass1234', subject: 'transport' },
+                'Kompyuter sistemləri': { password: 'pass1234', subject: 'computer' },
+                'Riyaziyyat': { password: 'pass1234', subject: 'math' },
+                'İqtisadiyyat': { password: 'pass1234', subject: 'economics' },
+                'Azərbaycan dili': { password: 'pass1234', subject: 'azerbaijani' },
+                'İngilis dili': { password: 'pass1234', subject: 'english' },
+                'Fiziki tərbiyə': { password: 'pass1234', subject: 'physical' },
+                'Pedaqogika': { password: 'pass1234', subject: 'pedagogy' },
+                'Kənd təsərrüfatı': { password: 'pass1234', subject: 'agriculture' },
+                'Tarix': { password: 'pass1234', subject: 'history' }
+            };
+            localStorage.setItem('teacherCredentials', JSON.stringify(defaultCredentials));
+            return defaultCredentials;
+        }
+    }
+
+    // Modul giriş məlumatlarını yükləyən və ya standart dəyərlər yaradan funksiya
+    function initializeLocalModuleCredentials() {
+        const storedCredentials = localStorage.getItem('moduleCredentials');
+        if (storedCredentials) {
+            return JSON.parse(storedCredentials);
+        } else {
+            const defaultCredentials = {
+                'transport': { username: 'neqliyyat', password: 'pass1234' },
+                'computer': { username: 'kompyuter', password: 'pass1234' },
+                'math': { username: 'riyaziyyat', password: 'pass1234' },
+                'economics': { username: 'iqtisadiyyat', password: 'pass1234' },
+                'azerbaijani': { username: 'azdili', password: 'pass1234' },
+                'english': { username: 'ingilisdili', password: 'pass1234' },
+                'physical': { username: 'fiziki', password: 'pass1234' },
+                'pedagogy': { username: 'pedagogiya', password: 'pass1234' },
+                'agriculture': { username: 'kend', password: 'pass1234' },
+                'history': { username: 'tarix', password: 'pass1234' }
+            };
+            localStorage.setItem('moduleCredentials', JSON.stringify(defaultCredentials));
+            return defaultCredentials;
+        }
+    }
+
+    // Səhifə yükləndikdə məlumatları serverdən yüklə
+    window.addEventListener('DOMContentLoaded', async () => {
+        // Məlumatları serverdən yüklə
+        fileData = await loadDataFromServer();
+        teacherCredentials = await loadTeacherCredentialsFromServer();
+        moduleCredentials = await loadModuleCredentialsFromServer();
+
+        // İlk modul düyməsini aktiv et
+        if (moduleBtns.length > 0) {
+            moduleBtns[0].classList.add('active');
+        }
+        
+        // Yadda saxlanılmış modul giriş məlumatlarını yoxla
+        subjectItems.forEach(item => {
+            const subject = item.getAttribute('data-subject');
+            const savedUsername = localStorage.getItem(`${subject}_module_username`);
+            const savedPassword = localStorage.getItem(`${subject}_module_password`);
+            
+            if (savedUsername && savedPassword) {
+                const modules = item.querySelectorAll('.module-item.locked');
+                modules.forEach(module => {
+                    module.classList.remove('locked');
+                    module.innerHTML = module.textContent;
+                });
+            }
+        });
+
+        console.log('Məlumatlar serverdən yükləndi');
+    });
+
+    // Fənn açılıb-bağlanmasını idarə edir
+    subjectItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            subjectItems.forEach(otherItem => {
+                if (otherItem !== item && otherItem.classList.contains('active')) {
+                    otherItem.classList.remove('active');
+                }
+            });
+            
+            item.classList.toggle('active');
+            
+            if (item.classList.contains('active')) {
+                currentSubject = item.getAttribute('data-subject');
+            } else {
+                currentSubject = null;
+            }
+        });
+    });
+
+    // Modul klik hadisəsi idarəedicisi
+    moduleItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            const moduleType = item.getAttribute('data-module');
+            currentModule = moduleType;
+            
+            if (item.classList.contains('locked')) {
+                moduleLoginTitle.textContent = `${getSubjectName(currentSubject)} - ${getModuleName(moduleType)}`;
+                moduleLoginModal.style.display = 'flex';
+            } else {
+                loadModuleContent(currentSubject, moduleType);
+            }
+        });
+    });
+
+    // Fənn adını almaq üçün funksiya
+    function getSubjectName(subject) {
+        const names = {
+            'transport': 'Nəqliyyat',
+            'computer': 'Komyuter sistemləri',
+            'math': 'Riyaziyyat',
+            'economics': 'İqtisadiyyat',
+            'azerbaijani': 'Azərbaycan dili',
+            'english': 'İngilis dili',
+            'physical': 'Fiziki tərbiyə',
+            'pedagogy': 'Pedaqogika',
+            'agriculture': 'Kənd təsərrüfatı',
+            'history': 'Tarix'
+        };
+        return names[subject] || subject;
+    }
+
+    // Modul adını almaq üçün funksiya
+    function getModuleName(module) {
+        const names = {
+            'lecture': 'Mühazirə',
+            'colloquium': 'Kollekvium',
+            'seminar': 'Seminar'
+        };
+        return names[module] || module;
+    }
+
+    // Modul məzmununu yükləyən funksiya - YENİ FAYL AÇILMA MƏNTİQİ
+    async function loadModuleContent(subject, module) {
+        const subjectName = getSubjectName(subject);
+        let titleText = '';
+        
+        switch(module) {
+            case 'lecture':
+                titleText = `${subjectName} - Mühazirə Materialları`;
+                break;
+            case 'colloquium':
+                titleText = `${subjectName} - Kollekvium Materialları`;
+                break;
+            case 'seminar':
+                titleText = `${subjectName} - Seminar Materialları`;
+                break;
+        }
+        
+        contentTitle.textContent = titleText;
+        backBtn.style.display = 'block';
         fileList.innerHTML = '';
         
-        if (files.length === 0) {
-          const emptyMessage = document.createElement('li');
-          emptyMessage.className = 'file-item glass';
-          emptyMessage.innerHTML = `
-            <span class="file-name">Hələlik heç bir fayl yoxdur</span>
-          `;
-          fileList.appendChild(emptyMessage);
-        } else {
-          files.forEach(file => {
-            const fileItem = createFileItem(file);
-            fileList.appendChild(fileItem);
-          });
-        }
-      } else {
-        console.error('Server xətası:', response.status);
-        fileList.innerHTML = '<li class="file-item glass">Server xətası. Yenidən cəhd edin.</li>';
-      }
-    } catch (error) {
-      console.error('Faylları yükləmə xətası:', error);
-      fileList.innerHTML = '<li class="file-item glass">Xəta baş verdi. Yenidən cəhd edin.</li>';
-    }
-  }
-
-  // Fayl elementi yaradan funksiya - YENİ VERSİYA
-  function createFileItem(file) {
-    const fileItem = document.createElement('li');
-    fileItem.className = 'file-item glass';
-    
-    const fileType = file.originalname.toLowerCase().endsWith('.pdf') ? 'pdf' : 'word';
-    const fileIcon = fileType === 'word' ? 'fa-file-word' : 'fa-file-pdf';
-    const fileName = file.originalname;
-    const fileUrl = file.url || `${API_BASE}/uploads/${file.filename}`;
-    
-    const fileAction = `<a href="${fileUrl}" title="Yüklə" download="${fileName}" target="_blank"><i class="fas ${fileIcon}"></i></a>`;
-    
-    fileItem.innerHTML = `
-      <span class="file-name">${fileName}</span>
-      <div class="file-actions">
-        ${fileAction}
-      </div>
-    `;
-    
-    fileItem.addEventListener('click', (e) => {
-      if (!e.target.closest('.file-actions')) {
-        const downloadLink = document.createElement('a');
-        downloadLink.href = fileUrl;
-        downloadLink.download = fileName;
-        downloadLink.style.display = 'none';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
-      }
-    });
-    
-    return fileItem;
-  }
-
-  // Modul giriş formunun təqdim olunması - YENİ VERSİYA
-  moduleLoginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('moduleUsername').value;
-    const password = document.getElementById('modulePassword').value;
-    const rememberPassword = document.getElementById('rememberModulePassword').checked;
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/module-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          subject: currentSubject,
-          username: username,
-          password: password
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (result.success) {
-          if (rememberPassword) {
-            localStorage.setItem(`${currentSubject}_module_username`, username);
-            localStorage.setItem(`${currentSubject}_module_password`, password);
-          }
-          
-          unlockCurrentModule();
-          await loadModuleContent(currentSubject, currentModule);
-          moduleLoginModal.style.display = 'none';
-          moduleLoginForm.reset();
-        } else {
-          alert('İstifadəçi adı və ya şifrə yanlışdır!');
-        }
-      } else {
-        throw new Error('Server xətası');
-      }
-    } catch (error) {
-      console.error('Giriş xətası:', error);
-      alert('Serverə qoşula bilmədi. İnternet əlaqənizi yoxlayın.');
-    }
-  });
-
-  // Cari modulu açan funksiya
-  function unlockCurrentModule() {
-    if (currentSubject && currentModule) {
-      const subjectElement = document.querySelector(`.subject-item[data-subject="${currentSubject}"]`);
-      const moduleElement = subjectElement.querySelector(`.module-item[data-module="${currentModule}"]`);
-      
-      moduleElement.classList.remove('locked');
-      moduleElement.innerHTML = moduleElement.textContent;
-    }
-  }
-
-  // Profil düyməsinə klik olunduqda
-  profileBtn.addEventListener('click', () => {
-    profileLoginModal.style.display = 'flex';
-  });
-
-  // Profil giriş formunun təqdim olunması - YENİ VERSİYA
-  profileLoginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('profileUsername').value;
-    const password = document.getElementById('profilePassword').value;
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/teacher-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (result.success) {
-          openCabinet(result.subject);
-          profileLoginModal.style.display = 'none';
-          profileLoginForm.reset();
-        } else {
-          alert('İstifadəçi adı və ya şifrə yanlışdır!');
-        }
-      } else {
-        throw new Error('Server xətası');
-      }
-    } catch (error) {
-      console.error('Giriş xətası:', error);
-      alert('Serverə qoşula bilmədi. İnternet əlaqənizi yoxlayın.');
-    }
-  });
-
-  // Şəxsi kabinet açan funksiya
-  function openCabinet(subject) {
-    currentTeacherSubject = subject;
-    cabinetTitle.textContent = `${getSubjectName(subject)} - Şəxsi Kabinet`;
-    cabinetModal.style.display = 'block';
-    loadTeacherFiles(subject);
-  }
-
-  // Geri düyməsinə klik olunduqda
-  backBtn.addEventListener('click', () => {
-    backBtn.style.display = 'none';
-    contentTitle.textContent = 'Xoş gəlmisiniz!';
-    fileList.innerHTML = '';
-    currentSubject = null;
-    currentModule = null;
-  });
-
-  // Pəncərə bağlama düymələri
-  closeModuleLoginModal.addEventListener('click', () => {
-    moduleLoginModal.style.display = 'none';
-  });
-
-  closeProfileLoginModal.addEventListener('click', () => {
-    profileLoginModal.style.display = 'none';
-  });
-
-  closeCabinetModal.addEventListener('click', () => {
-    cabinetModal.style.display = 'none';
-  });
-
-  // Modul seçimi
-  moduleBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      moduleBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      selectedModule = btn.getAttribute('data-module');
-    });
-  });
-
-  // Fayl yükləmə
-  pdfUpload.addEventListener('change', (e) => {
-    handleFileUpload(e.target.files[0], 'pdf');
-  });
-
-  wordUpload.addEventListener('change', (e) => {
-    handleFileUpload(e.target.files[0], 'word');
-  });
-
-  // Fayl yükləməni idarə edən funksiya - YENİ VERSİYA (YALNIZ SERVER)
-  async function handleFileUpload(file, type) {
-    if (!currentTeacherSubject || !file) return;
-    
-    const fileName = file.name;
-    const fileExtension = fileName.split('.').pop().toLowerCase();
-    
-    if (type === 'pdf' && fileExtension !== 'pdf') {
-      alert('Zəhmət olmasa PDF fayl seçin!');
-      return;
-    }
-    
-    if (type === 'word' && !['doc', 'docx'].includes(fileExtension)) {
-      alert('Zəhmət olmasa Word fayl seçin!');
-      return;
-    }
-    
-    console.log(`Fayl yüklənir: ${fileName}, tip: ${type}`);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('subject', currentTeacherSubject);
-      formData.append('module', selectedModule);
-      formData.append('type', type);
-      
-      const response = await fetch(`${API_BASE}/api/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Fayl uğurla yükləndi:', result);
-        
-        alert(`${fileName} faylı uğurla əlavə edildi! Bütün cihazlarda görünəcək.`);
-        
-        // Şəxsi kabineti yenilə
-        await loadTeacherFiles(currentTeacherSubject);
-        
-        // Əsas səhifəni də yenilə (əgər aktiv modul varsa)
-        if (currentSubject && currentModule) {
-          setTimeout(() => {
-            loadModuleContent(currentSubject, currentModule);
-          }, 1000);
-        }
-        
-        if (type === 'pdf') {
-          pdfUpload.value = '';
-        } else {
-          wordUpload.value = '';
-        }
-      } else {
-        const errorText = await response.text();
-        console.error('Yükləmə xətası:', errorText);
-        throw new Error(errorText);
-      }
-    } catch (error) {
-      console.error('Fayl yükləmə xətası:', error);
-      alert('Fayl yüklənərkən xəta baş verdi: ' + error.message);
-      
-      if (type === 'pdf') {
-        pdfUpload.value = '';
-      } else {
-        wordUpload.value = '';
-      }
-    }
-  }
-
-  // Şifrə yeniləmə formu - YENİ VERSİYA
-  updatePasswordForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    let currentTeacher = null;
-    for (const [username, data] of Object.entries(teacherCredentials)) {
-      if (data.subject === currentTeacherSubject) {
-        currentTeacher = username;
-        break;
-      }
-    }
-    
-    if (!currentTeacher) {
-      alert('Müəllim tapılmadı!');
-      return;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      alert('Yeni şifrə və təsdiq şifrəsi uyğun gəlmir!');
-      return;
-    }
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/update-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          teacher: currentTeacher,
-          currentPassword: currentPassword,
-          newPassword: newPassword
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          alert('Şifrə uğurla yeniləndi!');
-          updatePasswordForm.reset();
-        } else {
-          alert('Şifrə yeniləmə uğursuz oldu: ' + result.message);
-        }
-      } else {
-        throw new Error('Server xətası');
-      }
-    } catch (error) {
-      console.error('Şifrə yeniləmə xətası:', error);
-      alert('Şifrə yenilənərkən xəta baş verdi.');
-    }
-  });
-
-  // Müəllim fayllarını yükləyən funksiya - YENİ VERSİYA (YALNIZ SERVER)
-  async function loadTeacherFiles(subject) {
-    fileEditList.innerHTML = '<div class="file-item glass">Yüklənir...</div>';
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/teacher-files/${subject}?t=${Date.now()}`);
-      if (response.ok) {
-        const filesByModule = await response.json();
-        fileEditList.innerHTML = '';
-        
-        Object.keys(filesByModule).forEach(module => {
-          if (filesByModule[module].length > 0) {
-            const moduleTitle = document.createElement('div');
-            moduleTitle.className = 'section-title';
-            moduleTitle.style.marginTop = '15px';
-            moduleTitle.style.fontSize = '1.2rem';
-            
-            switch(module) {
-              case 'lecture':
-                moduleTitle.textContent = 'Mühazirə Faylları';
-                break;
-              case 'colloquium':
-                moduleTitle.textContent = 'Kollekvium Faylları';
-                break;
-              case 'seminar':
-                moduleTitle.textContent = 'Seminar Faylları';
-                break;
+        try {
+            // Serverdən faylları yüklə
+            const response = await fetch(`${API_BASE}/api/files/${subject}/${module}`);
+            if (response.ok) {
+                const files = await response.json();
+                
+                if (files.length === 0) {
+                    const emptyMessage = document.createElement('li');
+                    emptyMessage.className = 'file-item glass';
+                    emptyMessage.innerHTML = `
+                        <span class="file-name">Hələlik heç bir fayl yoxdur</span>
+                    `;
+                    fileList.appendChild(emptyMessage);
+                } else {
+                    files.forEach(file => {
+                        const fileItem = createFileItem(file, true);
+                        fileList.appendChild(fileItem);
+                    });
+                }
+            } else {
+                throw new Error('Server xətası');
             }
-            
-            fileEditList.appendChild(moduleTitle);
-            
-            filesByModule[module].forEach(file => {
-              const fileEditItem = document.createElement('div');
-              fileEditItem.className = 'file-edit-item';
-              fileEditItem.innerHTML = `
-                <span class="file-name">${file.originalname}</span>
-                <div class="file-edit-actions">
-                  <button class="edit-btn" data-id="${file.id}" data-module="${module}"><i class="fas fa-edit"></i></button>
-                  <button class="delete-btn" data-id="${file.id}" data-module="${module}"><i class="fas fa-trash"></i></button>
-                </div>
-              `;
-              fileEditList.appendChild(fileEditItem);
-            });
-          }
+        } catch (error) {
+            console.error('Faylları yükləmə xətası:', error);
+            // Local data istifadə et
+            if (fileData[subject] && fileData[subject][module]) {
+                if (fileData[subject][module].length === 0) {
+                    const emptyMessage = document.createElement('li');
+                    emptyMessage.className = 'file-item glass';
+                    emptyMessage.innerHTML = `
+                        <span class="file-name">Hələlik heç bir fayl yoxdur</span>
+                    `;
+                    fileList.appendChild(emptyMessage);
+                } else {
+                    fileData[subject][module].forEach(file => {
+                        const fileItem = createFileItem(file, false);
+                        fileList.appendChild(fileItem);
+                    });
+                }
+            }
+        }
+    }
+
+    // Fayl elementi yaradan funksiya - YENİ AÇILMA/YÜKLƏMƏ MƏNTİQİ
+    function createFileItem(file, fromServer) {
+        const fileItem = document.createElement('li');
+        fileItem.className = 'file-item glass';
+        
+        const fileType = file.type || (file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'word');
+        const fileIcon = fileType === 'word' ? 'fa-file-word' : 'fa-file-pdf';
+        const fileName = fromServer ? file.originalname : file.name;
+        const fileUrl = fromServer ? `${API_BASE}/uploads/${file.filename}` : file.url;
+        
+        // Həm PDF, həm də Word faylları üçün YÜKLƏMƏ funksiyası
+        const fileAction = `<a href="${fileUrl}" title="Yüklə" download="${fileName}"><i class="fas ${fileIcon}"></i></a>`;
+        
+        fileItem.innerHTML = `
+            <span class="file-name">${fileName}</span>
+            <div class="file-actions">
+                ${fileAction}
+            </div>
+        `;
+        
+        // Fayl elementinə klik olunduqda avtomatik endir
+        fileItem.addEventListener('click', (e) => {
+            if (!e.target.closest('.file-actions')) {
+                // Faylın özünə klik olunduqda avtomatik endir
+                const downloadLink = document.createElement('a');
+                downloadLink.href = fileUrl;
+                downloadLink.download = fileName;
+                downloadLink.style.display = 'none';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            }
         });
         
-        if (fileEditList.innerHTML === '') {
-          fileEditList.innerHTML = '<div class="file-item glass">Hələlik heç bir fayl yoxdur</div>';
-        }
-      } else {
-        throw new Error('Server xətası: ' + response.status);
-      }
-    } catch (error) {
-      console.error('Faylları yükləmə xətası:', error);
-      fileEditList.innerHTML = '<div class="file-item glass">Xəta baş verdi. Yenidən cəhd edin.</div>';
-      return;
+        return fileItem;
     }
-    
-    // Redaktə və silmə düymələri
-    document.querySelectorAll('.edit-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const fileId = e.currentTarget.getAttribute('data-id');
-        const module = e.currentTarget.getAttribute('data-module');
-        editFileName(fileId, module, subject);
-      });
-    });
-    
-    document.querySelectorAll('.delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const fileId = e.currentTarget.getAttribute('data-id');
-        const module = e.currentTarget.getAttribute('data-module');
-        deleteFile(fileId, module, subject);
-      });
-    });
-  }
 
-  // Fayl adını redaktə edən funksiya - YENİ VERSİYA
-  async function editFileName(fileId, module, subject) {
-    const newName = prompt('Fayl adını dəyişin:');
-    if (!newName) return;
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/update-filename`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileId: fileId,
-          module: module,
-          subject: subject,
-          newName: newName
-        })
-      });
+    // Modul giriş formunun təqdim olunması
+    moduleLoginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('moduleUsername').value;
+        const password = document.getElementById('modulePassword').value;
+        const rememberPassword = document.getElementById('rememberModulePassword').checked;
+        
+        try {
+            // Serverdə girişi yoxla
+            const response = await fetch(`${API_BASE}/api/module-login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    subject: currentSubject,
+                    username: username,
+                    password: password
+                })
+            });
 
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          await loadTeacherFiles(subject);
-          alert('Fayl adı uğurla dəyişdirildi!');
-        } else {
-          alert('Fayl adı dəyişdirilərkən xəta baş verdi: ' + result.message);
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (rememberPassword) {
+                        localStorage.setItem(`${currentSubject}_module_username`, username);
+                        localStorage.setItem(`${currentSubject}_module_password`, password);
+                    }
+                    
+                    unlockCurrentModule();
+                    loadModuleContent(currentSubject, currentModule);
+                    moduleLoginModal.style.display = 'none';
+                    moduleLoginForm.reset();
+                } else {
+                    alert('İstifadəçi adı və ya şifrə yanlışdır!');
+                }
+            } else {
+                throw new Error('Server xətası');
+            }
+        } catch (error) {
+            console.error('Giriş xətası:', error);
+            // Local giriş yoxlaması
+            if (currentSubject && moduleCredentials[currentSubject]) {
+                if (username === moduleCredentials[currentSubject].username && 
+                    password === moduleCredentials[currentSubject].password) {
+                    
+                    if (rememberPassword) {
+                        localStorage.setItem(`${currentSubject}_module_username`, username);
+                        localStorage.setItem(`${currentSubject}_module_password`, password);
+                    }
+                    
+                    unlockCurrentModule();
+                    loadModuleContent(currentSubject, currentModule);
+                    moduleLoginModal.style.display = 'none';
+                    moduleLoginForm.reset();
+                } else {
+                    alert('İstifadəçi adı və ya şifrə yanlışdır!');
+                }
+            }
         }
-      } else {
-        throw new Error('Server xətası');
-      }
-    } catch (error) {
-      console.error('Ad dəyişmə xətası:', error);
-      alert('Fayl adı dəyişdirilərkən xəta baş verdi.');
-    }
-  }
-
-  // Faylı silən funksiya - YENİ VERSİYA
-  async function deleteFile(fileId, module, subject) {
-    if (!confirm('Bu faylı silmək istədiyinizə əminsiniz?')) return;
-    
-    try {
-      const response = await fetch(`${API_BASE}/api/delete-file`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileId: fileId,
-          module: module,
-          subject: subject
-        })
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success) {
-          await loadTeacherFiles(subject);
-          
-          // Əsas səhifəni də yenilə
-          if (currentSubject === subject && currentModule === module) {
-            setTimeout(() => {
-              loadModuleContent(subject, module);
-            }, 500);
-          }
-          
-          alert('Fayl uğurla silindi!');
-        } else {
-          alert('Fayl silinərkən xəta baş verdi: ' + result.message);
-        }
-      } else {
-        throw new Error('Server xətası');
-      }
-    } catch (error) {
-      console.error('Silinmə xətası:', error);
-      alert('Fayl silinərkən xəta baş verdi.');
-    }
-  }
-
-  // Yenilə düyməsi əlavə et
-  function addRefreshButton() {
-    const refreshBtn = document.createElement('button');
-    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Yenilə';
-    refreshBtn.className = 'refresh-btn';
-    refreshBtn.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: var(--accent-color);
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 50px;
-      cursor: pointer;
-      z-index: 1000;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    `;
-    
-    refreshBtn.addEventListener('click', async () => {
-      if (currentSubject && currentModule) {
-        await loadModuleContent(currentSubject, currentModule);
-      } else {
-        alert('Yeniləmə üçün əvvəlcə fənn və modul seçin!');
-      }
     });
-    
-    document.body.appendChild(refreshBtn);
-  }
+
+    // Cari modulu açan funksiya
+    function unlockCurrentModule() {
+        if (currentSubject && currentModule) {
+            const subjectElement = document.querySelector(`.subject-item[data-subject="${currentSubject}"]`);
+            const moduleElement = subjectElement.querySelector(`.module-item[data-module="${currentModule}"]`);
+            
+            moduleElement.classList.remove('locked');
+            moduleElement.innerHTML = moduleElement.textContent;
+        }
+    }
+
+    // Profil düyməsinə klik olunduqda
+    profileBtn.addEventListener('click', () => {
+        profileLoginModal.style.display = 'flex';
+    });
+
+    // Profil giriş formunun təqdim olunması
+    profileLoginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('profileUsername').value;
+        const password = document.getElementById('profilePassword').value;
+        
+        try {
+            // Serverdə müəllim girişini yoxla
+            const response = await fetch(`${API_BASE}/api/teacher-login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success) {
+                    openCabinet(result.subject);
+                    profileLoginModal.style.display = 'none';
+                    profileLoginForm.reset();
+                } else {
+                    alert('İstifadəçi adı və ya şifrə yanlışdır!');
+                }
+            } else {
+                throw new Error('Server xətası');
+            }
+        } catch (error) {
+            console.error('Giriş xətası:', error);
+            // Local giriş yoxlaması
+            if (teacherCredentials[username] && teacherCredentials[username].password === password) {
+                const subject = teacherCredentials[username].subject;
+                openCabinet(subject);
+                profileLoginModal.style.display = 'none';
+                profileLoginForm.reset();
+            } else {
+                alert('İstifadəçi adı və ya şifrə yanlışdır!');
+            }
+        }
+    });
+
+    // Şəxsi kabinet açan funksiya
+    function openCabinet(subject) {
+        currentTeacherSubject = subject;
+        cabinetTitle.textContent = `${getSubjectName(subject)} - Şəxsi Kabinet`;
+        cabinetModal.style.display = 'block';
+        loadTeacherFiles(subject);
+    }
+
+    // Geri düyməsinə klik olunduqda
+    backBtn.addEventListener('click', () => {
+        backBtn.style.display = 'none';
+        contentTitle.textContent = 'Xoş gəlmisiniz!';
+        fileList.innerHTML = '';
+    });
+
+    // Pəncərə bağlama düymələri
+    closeModuleLoginModal.addEventListener('click', () => {
+        moduleLoginModal.style.display = 'none';
+    });
+
+    closeProfileLoginModal.addEventListener('click', () => {
+        profileLoginModal.style.display = 'none';
+    });
+
+    closeCabinetModal.addEventListener('click', () => {
+        cabinetModal.style.display = 'none';
+    });
+
+    // Modul seçimi
+    moduleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            moduleBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedModule = btn.getAttribute('data-module');
+        });
+    });
+
+    // Fayl yükləmə
+    pdfUpload.addEventListener('change', (e) => {
+        handleFileUpload(e.target.files[0], 'pdf');
+    });
+
+    wordUpload.addEventListener('change', (e) => {
+        handleFileUpload(e.target.files[0], 'word');
+    });
+
+    // Fayl yükləməni idarə edən funksiya - YENİ SERVER YÜKLƏMƏ
+    async function handleFileUpload(file, type) {
+        if (!currentTeacherSubject || !file) return;
+        
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+        
+        if (type === 'pdf' && fileExtension !== 'pdf') {
+            alert('Zəhmət olmasa PDF fayl seçin!');
+            return;
+        }
+        
+        if (type === 'word' && !['doc', 'docx'].includes(fileExtension)) {
+            alert('Zəhmət olmasa Word fayl seçin!');
+            return;
+        }
+        
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('subject', currentTeacherSubject);
+            formData.append('module', selectedModule);
+            formData.append('type', type);
+            
+            const response = await fetch(`${API_BASE}/api/upload`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Local data-da da saxla (fallback üçün)
+                const fileObj = {
+                    id: Date.now(),
+                    name: fileName,
+                    url: `${API_BASE}/uploads/${result.filename}`,
+                    type: type
+                };
+                
+                if (!fileData[currentTeacherSubject]) {
+                    fileData[currentTeacherSubject] = { lecture: [], colloquium: [], seminar: [] };
+                }
+                fileData[currentTeacherSubject][selectedModule].push(fileObj);
+                localStorage.setItem('collegeFileData', JSON.stringify(fileData));
+                
+                loadTeacherFiles(currentTeacherSubject);
+                
+                const moduleName = getModuleName(selectedModule);
+                alert(`${fileName} faylı ${moduleName} bölməsinə uğurla əlavə edildi!`);
+                
+                if (type === 'pdf') {
+                    pdfUpload.value = '';
+                } else {
+                    wordUpload.value = '';
+                }
+            } else {
+                throw new Error('Yükləmə xətası');
+            }
+        } catch (error) {
+            console.error('Fayl yükləmə xətası:', error);
+            // Local yükləmə (yalnız fallback üçün)
+            const fileObj = {
+                id: Date.now(),
+                name: fileName,
+                url: URL.createObjectURL(file),
+                type: type
+            };
+            
+            if (!fileData[currentTeacherSubject]) {
+                fileData[currentTeacherSubject] = { lecture: [], colloquium: [], seminar: [] };
+            }
+            fileData[currentTeacherSubject][selectedModule].push(fileObj);
+            localStorage.setItem('collegeFileData', JSON.stringify(fileData));
+            loadTeacherFiles(currentTeacherSubject);
+            
+            const moduleName = getModuleName(selectedModule);
+            alert(`${fileName} faylı ${moduleName} bölməsinə əlavə edildi! (Yalnız bu cihazda görünəcək)`);
+            
+            if (type === 'pdf') {
+                pdfUpload.value = '';
+            } else {
+                wordUpload.value = '';
+            }
+        }
+    }
+
+    // Şifrə yeniləmə formu
+    updatePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        
+        let currentTeacher = null;
+        for (const [username, data] of Object.entries(teacherCredentials)) {
+            if (data.subject === currentTeacherSubject) {
+                currentTeacher = username;
+                break;
+            }
+        }
+        
+        if (currentTeacher && currentPassword !== teacherCredentials[currentTeacher].password) {
+            alert('Hazırki şifrə yanlışdır!');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            alert('Yeni şifrə və təsdiq şifrəsi uyğun gəlmir!');
+            return;
+        }
+        
+        try {
+            // Serverdə şifrəni yenilə
+            const response = await fetch(`${API_BASE}/api/update-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    teacher: currentTeacher,
+                    currentPassword: currentPassword,
+                    newPassword: newPassword
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Local şifrəni də yenilə
+                    if (currentTeacher) {
+                        teacherCredentials[currentTeacher].password = newPassword;
+                        localStorage.setItem('teacherCredentials', JSON.stringify(teacherCredentials));
+                    }
+                    alert('Şifrə uğurla yeniləndi!');
+                    updatePasswordForm.reset();
+                } else {
+                    alert('Şifrə yeniləmə uğursuz oldu!');
+                }
+            } else {
+                throw new Error('Server xətası');
+            }
+        } catch (error) {
+            console.error('Şifrə yeniləmə xətası:', error);
+            // Local şifrə yeniləmə
+            if (currentTeacher) {
+                teacherCredentials[currentTeacher].password = newPassword;
+                localStorage.setItem('teacherCredentials', JSON.stringify(teacherCredentials));
+            }
+            alert('Şifrə uğurla yeniləndi! (Local)');
+            updatePasswordForm.reset();
+        }
+    });
+
+    // Müəllim fayllarını yükləyən funksiya
+    async function loadTeacherFiles(subject) {
+        fileEditList.innerHTML = '';
+        
+        try {
+            // Serverdən faylları yüklə
+            const response = await fetch(`${API_BASE}/api/teacher-files/${subject}`);
+            if (response.ok) {
+                const filesByModule = await response.json();
+                
+                Object.keys(filesByModule).forEach(module => {
+                    if (filesByModule[module].length > 0) {
+                        const moduleTitle = document.createElement('div');
+                        moduleTitle.className = 'section-title';
+                        moduleTitle.style.marginTop = '15px';
+                        moduleTitle.style.fontSize = '1.2rem';
+                        
+                        switch(module) {
+                            case 'lecture':
+                                moduleTitle.textContent = 'Mühazirə Faylları';
+                                break;
+                            case 'colloquium':
+                                moduleTitle.textContent = 'Kollekvium Faylları';
+                                break;
+                            case 'seminar':
+                                moduleTitle.textContent = 'Seminar Faylları';
+                                break;
+                        }
+                        
+                        fileEditList.appendChild(moduleTitle);
+                        
+                        filesByModule[module].forEach(file => {
+                            const fileEditItem = document.createElement('div');
+                            fileEditItem.className = 'file-edit-item';
+                            fileEditItem.innerHTML = `
+                                <span class="file-name">${file.originalname}</span>
+                                <div class="file-edit-actions">
+                                    <button class="edit-btn" data-id="${file.id}" data-module="${module}"><i class="fas fa-edit"></i></button>
+                                    <button class="delete-btn" data-id="${file.id}" data-module="${module}"><i class="fas fa-trash"></i></button>
+                                </div>
+                            `;
+                            fileEditList.appendChild(fileEditItem);
+                        });
+                    }
+                });
+            } else {
+                throw new Error('Server xətası');
+            }
+        } catch (error) {
+            console.error('Faylları yükləmə xətası:', error);
+            // Local faylları göstər
+            if (!fileData[subject]) return;
+            
+            Object.keys(fileData[subject]).forEach(module => {
+                if (fileData[subject][module].length > 0) {
+                    const moduleTitle = document.createElement('div');
+                    moduleTitle.className = 'section-title';
+                    moduleTitle.style.marginTop = '15px';
+                    moduleTitle.style.fontSize = '1.2rem';
+                    
+                    switch(module) {
+                        case 'lecture':
+                            moduleTitle.textContent = 'Mühazirə Faylları';
+                            break;
+                        case 'colloquium':
+                            moduleTitle.textContent = 'Kollekvium Faylları';
+                            break;
+                        case 'seminar':
+                            moduleTitle.textContent = 'Seminar Faylları';
+                            break;
+                    }
+                    
+                    fileEditList.appendChild(moduleTitle);
+                    
+                    fileData[subject][module].forEach(file => {
+                        const fileEditItem = document.createElement('div');
+                        fileEditItem.className = 'file-edit-item';
+                        fileEditItem.innerHTML = `
+                            <span class="file-name">${file.name}</span>
+                            <div class="file-edit-actions">
+                                <button class="edit-btn" data-id="${file.id}" data-module="${module}"><i class="fas fa-edit"></i></button>
+                                <button class="delete-btn" data-id="${file.id}" data-module="${module}"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `;
+                        fileEditList.appendChild(fileEditItem);
+                    });
+                }
+            });
+        }
+        
+        // Redaktə və silmə düymələri
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const fileId = e.currentTarget.getAttribute('data-id');
+                const module = e.currentTarget.getAttribute('data-module');
+                editFileName(fileId, module, subject);
+            });
+        });
+        
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const fileId = e.currentTarget.getAttribute('data-id');
+                const module = e.currentTarget.getAttribute('data-module');
+                deleteFile(fileId, module, subject);
+            });
+        });
+    }
+
+    // Fayl adını redaktə edən funksiya
+    async function editFileName(fileId, module, subject) {
+        const newName = prompt('Fayl adını dəyişin:');
+        if (!newName) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/update-filename`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    fileId: fileId,
+                    module: module,
+                    subject: subject,
+                    newName: newName
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Local data-da da yenilə
+                    if (fileData[subject] && fileData[subject][module]) {
+                        const file = fileData[subject][module].find(f => f.id == fileId);
+                        if (file) {
+                            file.name = newName;
+                            localStorage.setItem('collegeFileData', JSON.stringify(fileData));
+                        }
+                    }
+                    loadTeacherFiles(subject);
+                    alert('Fayl adı uğurla dəyişdirildi!');
+                }
+            } else {
+                throw new Error('Server xətası');
+            }
+        } catch (error) {
+            console.error('Ad dəyişmə xətası:', error);
+            // Local redaktə
+            if (fileData[subject] && fileData[subject][module]) {
+                const file = fileData[subject][module].find(f => f.id == fileId);
+                if (file) {
+                    file.name = newName;
+                    localStorage.setItem('collegeFileData', JSON.stringify(fileData));
+                }
+            }
+            loadTeacherFiles(subject);
+            alert('Fayl adı dəyişdirildi! (Local)');
+        }
+    }
+
+    // Faylı silən funksiya
+    async function deleteFile(fileId, module, subject) {
+        if (!confirm('Bu faylı silmək istədiyinizə əminsiniz?')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/delete-file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    fileId: fileId,
+                    module: module,
+                    subject: subject
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    // Local data-dan da sil
+                    if (fileData[subject] && fileData[subject][module]) {
+                        fileData[subject][module] = fileData[subject][module].filter(f => f.id != fileId);
+                        localStorage.setItem('collegeFileData', JSON.stringify(fileData));
+                    }
+                    loadTeacherFiles(subject);
+                    alert('Fayl uğurla silindi!');
+                }
+            } else {
+                throw new Error('Server xətası');
+            }
+        } catch (error) {
+            console.error('Silinmə xətası:', error);
+            // Local silinmə
+            if (fileData[subject] && fileData[subject][module]) {
+                fileData[subject][module] = fileData[subject][module].filter(f => f.id != fileId);
+                localStorage.setItem('collegeFileData', JSON.stringify(fileData));
+            }
+            loadTeacherFiles(subject);
+            alert('Fayl silindi! (Local)');
+        }
+    }
+
+    // Serverin işlədiyini yoxlamaq üçün funksiya
+    async function checkServerStatus() {
+        try {
+            const response = await fetch(`${API_BASE}/api/status`);
+            return response.ok;
+        } catch (error) {
+            console.error('Server əlçatmazdır');
+            return false;
+        }
+    }
 </script>
 </body>
 </html>
-
-
-
 
