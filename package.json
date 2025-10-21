@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "render-start": "node server.js"
+    "render-start": "node server.js"  // ✅ Render.com üçün düzgün
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -27,6 +27,6 @@
   "author": "Your Name",
   "license": "MIT",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=14.0.0"  // ✅ Render.com Node.js tələbi
   }
 }
