@@ -11,22 +11,25 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS Konfiqurasiyası - GitHub Pages üçün
-const allowedOrigins = [
-    'https://yourusername.github.io', // GitHub Pages domain-ini yaz
-    'http://localhost:3000',
-    'http://localhost:5500'
-];
-
+// CORS Konfiqurasiyası - YALNIZ BIR DƏFƏ
 app.use(cors({
     origin: function (origin, callback) {
-        // Postman və ya origin olmayan sorğulara icazə ver
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'CORS siyasəti bu origin-ə icazə vermir';
-            return callback(new Error(msg), false);
+        // Development üçün
+        if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+            return callback(null, true);
         }
+        
+        // Production üçün - GitHub Pages bütün domain-ləri
+        if (origin.includes('.github.io')) {
+            return callback(null, true);
+        }
+        
+        // Render previews üçün
+        if (origin.includes('.onrender.com')) {
+            return callback(null, true);
+        }
+        
+        // Default olaraq icazə ver
         return callback(null, true);
     },
     credentials: true
