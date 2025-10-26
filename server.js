@@ -11,9 +11,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
     origin: [
         'https://agdamkollec002-ship-it.github.io',
+        'https://agdamkollec002-ship-it.github.io/sadiq',
         'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:8000'
+        'http://127.0.0.1:3000'
     ],
     credentials: true
 }));
@@ -581,3 +581,4 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Render üçün hazırdır!`);
     console.log(`=================================`);
 });
+
